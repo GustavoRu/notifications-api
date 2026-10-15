@@ -1,0 +1,19 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: notif
+      POSTGRES_PASSWORD: notif
+      POSTGRES_DB: notifications
+    ports:
+      - "5434:5432"          # puerto en tu Mac : puerto dentro del contenedor
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notif -d notifications"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
