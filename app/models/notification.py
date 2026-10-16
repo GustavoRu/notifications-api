@@ -6,7 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from sqlalchemy.sql import func
 
-from database import Base
+from app.database import Base
 
 
 class Notification(Base):
@@ -19,7 +19,7 @@ class Notification(Base):
     channel: Mapped[str] = mapped_column(String(10))
     recipient: Mapped[str] = mapped_column(String(250))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
 
