@@ -1,16 +1,24 @@
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Request, status, Depends
 
-from sqlalchemy import select
+from sqlalchemy import select, func
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import session
 
-import models
-from database import Base, engine, get_db
+from app import models
+#from config import settings
+from app.database import engine, get_db
+#from routers import posts
 
-Base.metadata.create_all(bind=engine)
+asynccontextmanager
+async def lifespan(_app: FastAPI):
+    yield
+    #shoutdown
+    await engine.dispose()
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
 def home():

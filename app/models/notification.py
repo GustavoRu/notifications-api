@@ -17,7 +17,7 @@ class Notification(Base):
     title: Mapped[str] = mapped_column(String(60))
     content: Mapped[str] = mapped_column(String(250))
     channel: Mapped[str] = mapped_column(String(10))
-    recipient: Mapped[str] = mapped_column(String(250))
+    recipient: Mapped[str] = mapped_column(String(250)) #email, number, token
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
