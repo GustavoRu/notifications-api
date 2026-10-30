@@ -10,6 +10,7 @@ from sqlalchemy.orm import selectinload
 import app.models
 from app.database import get_db
 from app.auth.schemas import UserRead, UserCreate, Token
+from app.auth.dependencies import CurrentUser
 
 from app.auth.auth import (
     create_access_token,
@@ -24,7 +25,7 @@ from app.config import settings
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/register/", status_code=201, response_model=UserRead)
+@router.post("/register", status_code=201, response_model=UserRead)
 async def register(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)]):
     result = await db.execute(
         select(app.models.User).where(
@@ -68,6 +69,7 @@ async def login_for_access_token(
 ):
     # Look up user by email (case-insensitive)
     # Note: OAuth2PasswordRequestForm uses "username" field, but we treat it as email
+    print(form_data)
     result = await db.execute(
         select(app.models.User).where(
             func.lower(app.models.User.email) == form_data.username.lower(),
@@ -77,7 +79,7 @@ async def login_for_access_token(
 
     # Verify user exists and password is correct
     # Don't reveal which one failed (security best practice)
-    if not user or not verify_password(form_data.password, user.password_hash):
+    if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -94,38 +96,21 @@ async def login_for_access_token(
 
 
 @router.get("/me", response_model=UserRead)
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+async def read_current_user(current_user: CurrentUser):
+    return current_user
+
+
+"""@router.get("/{user_id}", response_model=UserRead)
+async def get_user(
+    user_id: int,
     db: Annotated[AsyncSession, Depends(get_db)],
 ):
-    """Get the currently authenticated user."""
-    user_id = verify_access_token(token)
-    if user_id is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    # Validate user_id is a valid integer (defense against malformed JWT)
-    try:
-        user_id_int = int(user_id)
-    except (TypeError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
     result = await db.execute(
-        select(app.models.User).where(app.models.User.id == user_id_int),
+        select(app.models.User).where(
+            app.models.User.id == user_id,
+        )
     )
     user = result.scalars().first()
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return user
+    if user:
+        return user
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User Not found")"""
