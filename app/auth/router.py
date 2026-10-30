@@ -48,7 +48,7 @@ async def register(user: UserCreate, db: Annotated[AsyncSession, Depends(get_db)
     if existing_email:
         raise HTTPException(
             status_code=409,
-            detail="Email name already exists",
+            detail="Email already exists",
         )
 
     new_user = app.models.User(
