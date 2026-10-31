@@ -69,7 +69,6 @@ async def login_for_access_token(
 ):
     # Look up user by email (case-insensitive)
     # Note: OAuth2PasswordRequestForm uses "username" field, but we treat it as email
-    print(form_data)
     result = await db.execute(
         select(app.models.User).where(
             func.lower(app.models.User.email) == form_data.username.lower(),
