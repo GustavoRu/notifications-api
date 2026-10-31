@@ -9,8 +9,9 @@ from sqlalchemy.orm import session
 
 from app import models
 #from config import settings
-from app.database import engine, get_db
+from app.database import engine
 from app.auth.router import router as router_auth
+from app.notification.router import router as router_notification
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -21,12 +22,9 @@ async def lifespan(_app: FastAPI):
 #router = APIRouter()
 app = FastAPI(lifespan=lifespan)
 
-@app.get("/")
-def home():
-    return {"message": "hello world"}
-
 @app.get("/health")
 async def health():
     return {"status": "ready"}
 
 app.include_router(router_auth)
+app.include_router(router_notification)
