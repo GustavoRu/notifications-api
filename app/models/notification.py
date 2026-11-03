@@ -16,8 +16,8 @@ class Notification(Base):
     status: Mapped[str] = mapped_column(String(10)) #unique=False, nullable=False
     title: Mapped[str] = mapped_column(String(60))
     content: Mapped[str] = mapped_column(String(250))
-    channel: Mapped[str] = mapped_column(String(10))
-    recipient: Mapped[str] = mapped_column(String(250)) #email, number, token
+    channel: Mapped[str] = mapped_column(String(10))#email, number, token
+    recipient: Mapped[str] = mapped_column(String(250)) 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
