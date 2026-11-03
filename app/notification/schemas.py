@@ -33,5 +33,6 @@ class NotificationUpdate(BaseModel):
 class NotificationRead(NotificationBase):
     id: int
     created_at: datetime
+    #deleted_at: datetime
     status: str
     model_config = ConfigDict(from_attributes=True)

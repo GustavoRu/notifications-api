@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Notification
 
 
-class NotificationRepository(ABC):
+class INotificationRepository(ABC):
     """Data access for notifications. Never commits: the service owns the transaction."""
 
     @abstractmethod
@@ -23,7 +23,7 @@ class NotificationRepository(ABC):
     async def delete(self, notification: Notification) -> None: ...
 
 
-class SqlAlchemyNotificationRepository(NotificationRepository):
+class NotificationRepository(INotificationRepository):
     def __init__(self, session: AsyncSession):
         self._session = session
 
@@ -58,3 +58,4 @@ class SqlAlchemyNotificationRepository(NotificationRepository):
     async def delete(self, notification: Notification) -> None:
         notification.deleted_at = datetime.now(UTC)  # soft delete: the row and its deliveries stay
         await self._session.flush()
+      
