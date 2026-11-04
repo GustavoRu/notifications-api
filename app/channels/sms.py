@@ -10,7 +10,6 @@ from app.models import Notification
 
 SMS_REGEX_PHONE = re.compile(r'^(\+?\d{1,4}[-.\s]?)?(\(?\d{1,3}\)?[-.\s]?)?[\d.\s-]{7,12}$')
 
-
 class SmsChannel(INotificationChannel):
     name = "sms"
 

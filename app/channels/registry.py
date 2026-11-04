@@ -1,9 +1,10 @@
 from app.channels.sms import SmsChannel
+from app.channels.email import EmailChannel
 from app.channels.base import INotificationChannel, UnknownChannelError
     
 
 # Agregar un método/canal = crear su clase y sumarla a esta lista. El service no cambia.
-_CHANNELS: dict[str, INotificationChannel] = {m.name: m for m in [SmsChannel()]}
+_CHANNELS: dict[str, INotificationChannel] = {m.name: m for m in [SmsChannel(), EmailChannel()]}
 
 def get_channel_notification(name: str) -> INotificationChannel:
     try:
