@@ -8,22 +8,22 @@ from app.channels.base import (
 )
 from app.models import Notification
 
-SMS_REGEX_PHONE = re.compile(r'^(\+?\d{1,4}[-.\s]?)?(\(?\d{1,3}\)?[-.\s]?)?[\d.\s-]{7,12}$')
+SMS_REGEX_PHONE = re.compile(r"^\+\d{8,15}$")
 
 class SmsChannel(INotificationChannel):
     name = "sms"
 
     def validate(self, notification: Notification) -> None:
         if not SMS_REGEX_PHONE.match(notification.recipient):
-            raise NotificationValidationError("notification recipient is invalid")
+            raise NotificationValidationError("recipient must be a phone number in E.164 format, e.g. +5491112345678")
         if len(notification.content) > 160:
-            raise NotificationValidationError("notification msg are limited to 160")
+            raise NotificationValidationError("notification msg is limited to 160")
 
     async def send(self, notification: Notification) -> DeliveryResult:
         await asyncio.sleep(0.01)
 
         return DeliveryResult(
             status="sent",
-            details={"recipient": notification.recipient, "lenght_msg": len(notification.content)},
+            details={"recipient": notification.recipient, "length": len(notification.content)},
             error=None,  # result.error
         )
