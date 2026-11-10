@@ -35,10 +35,17 @@ def test_sms_rejects_161_chars():
 
 
 # SMS	Teléfonos inválidos ("hola", "12345", sin +)	Un solo test con @pytest.mark.parametrize
-@pytest.mark.parametrize("recipient", ["hola", "12345", "5491112345678"])
-async def test_sms_rejects_invalid_phone(recipient):
+@pytest.mark.parametrize("recipient", ["hola", "12345", "5491112345678", "------------", "+54 9 11 1234-5678"])
+def test_sms_rejects_invalid_phone(recipient):
     notification = make_notification(recipient=recipient)
     with pytest.raises(NotificationValidationError):
         SmsChannel().validate(notification)
 
 # SMS	send devuelve sent y el número en details	result = await channel.send(n) y assert sobre result
+async def test_sms_send_records_phone_and_length():
+    notification = make_notification()
+    result = await SmsChannel().send(notification)
+    assert result.status == "sent"
+    assert "recipient" in result.details
+    assert result.error is None
+    assert result.details == {"recipient": notification.recipient, "length": len(notification.content)}
