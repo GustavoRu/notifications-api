@@ -1,5 +1,4 @@
 import pytest
-from app.notification.service import NotificationNotFoundError
 
 pytestmark = pytest.mark.anyio
 SMS_PAYLOAD = {
