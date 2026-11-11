@@ -6,14 +6,28 @@ services:
       POSTGRES_PASSWORD: notif
       POSTGRES_DB: notifications
     ports:
-      - "5434:5432"          # puerto en tu Mac : puerto dentro del contenedor
+      - "5434:5432" # puerto en tu Mac : puerto dentro del contenedor
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Crea la base de los tests la primera vez que se inicializa el volumen
+      - ./docker/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U notif -d notifications"]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  api:
+    build: .
+    env_file: .env
+    environment:
+      # Dentro de la red de Docker, la base se llama "db" y escucha en 5432
+      DATABASE_URL: postgresql+psycopg://notif:notif@db:5432/notifications
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
