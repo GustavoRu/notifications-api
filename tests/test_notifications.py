@@ -1,5 +1,4 @@
 import pytest
-from datetime import datetime
 from app.notification.service import NotificationNotFoundError
 
 pytestmark = pytest.mark.anyio
@@ -12,125 +11,65 @@ SMS_PAYLOAD = {
 
 
 async def test_create_notification_requires_auth(client):
-    response = await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "Tu vuelo sale 10:30",
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
-    )
+    response = await client.post("/notifications", json=SMS_PAYLOAD)
+
     assert response.status_code == 401
 
 
 async def test_create_notification_sms_with_auth(client, auth_headers):
     response = await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "Tu vuelo sale 10:30",
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
-        headers=auth_headers,
+        "/notifications", json=SMS_PAYLOAD, headers=auth_headers
     )
-    body = response.json()
 
     assert response.status_code == 201
-    assert body["channel"] == "sms"
+    body = response.json()
     assert body["status"] == "sent"
-    assert "id" in body
+    assert {key: body[key] for key in SMS_PAYLOAD} == SMS_PAYLOAD
 
 
 # Arrange, Act, Assert
 async def test_create_notification_sms_with_161_characters(client, auth_headers):
     response = await client.post(
         "/notifications",
-        json={
-            "title": "Hola",
-            "content": "x" * 161,
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
+        json={**SMS_PAYLOAD, "content": "x" * 161},
         headers=auth_headers,
     )
 
     assert response.status_code == 422
+    assert "160" in response.json()["detail"]
 
 
-async def test_create_notification_sms_with_invalid_channel(client, auth_headers):
+async def test_create_notification_with_unknown_channel(client, auth_headers):
     response = await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "content",
-            "channel": "fax",
-            "recipient": "+5491112345678",
-        },
-        headers=auth_headers,
+        "/notifications", json={**SMS_PAYLOAD, "channel": "fax"}, headers=auth_headers
     )
 
     assert response.status_code == 422
+    assert "fax" in response.json()["detail"]
 
 
-async def test_get_two_notifications(client, auth_headers):
+async def test_list_returns_newest_first(client, auth_headers):
+    await client.post("/notifications", json=SMS_PAYLOAD, headers=auth_headers)
     await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "Tu vuelo sale 10:30",
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
-        headers=auth_headers,
-    )
-    await client.post(
-        "/notifications",
-        json={
-            "title": "Hola2",
-            "content": "Tu vuelo sale 11:30",
-            "channel": "sms",
-            "recipient": "+5491112345679",
-        },
-        headers=auth_headers,
+        "/notifications", json={**SMS_PAYLOAD, "title": "Hola2"}, headers=auth_headers
     )
 
-    response = await client.get(
-        "/notifications",
-        headers=auth_headers,
-    )
+    response = await client.get("/notifications", headers=auth_headers)
 
-    notifications_list = response.json()
-
-    date_one = datetime.fromisoformat(notifications_list[0]["created_at"])
-    date_two = datetime.fromisoformat(notifications_list[1]["created_at"])
-
-    assert isinstance(notifications_list, list)
-    assert date_one > date_two
+    assert response.status_code == 200
+    assert [n["title"] for n in response.json()] == ["Hola2", "Hola"]
 
 
 # auth_headers_user_two
-async def test_notifications_empty_list(client, auth_headers_user_two, auth_headers):
-    await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "Tu vuelo sale 10:30",
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
-        headers=auth_headers,
-    )
+async def test_user_cannot_see_other_users_notifications(
+    client, auth_headers, auth_headers_user_two
+):
+    await client.post("/notifications", json=SMS_PAYLOAD, headers=auth_headers)
 
-    response = await client.get(
-        "/notifications",
-        headers=auth_headers_user_two,
-    )
-    notifications_list = response.json()
+    response = await client.get("/notifications", headers=auth_headers_user_two)
 
-    assert isinstance(notifications_list, list)
-    assert len(notifications_list) == 0
+    assert response.status_code == 200
+    assert response.json() == []
 
 
 async def test_delete_notification_removes_it_from_list(client, auth_headers):
@@ -147,36 +86,38 @@ async def test_delete_notification_removes_it_from_list(client, auth_headers):
     assert remaining == []
 
 
-async def test_delete_notification_with_another_user_id(
+async def test_user_cannot_delete_other_users_notification(
     client, auth_headers, auth_headers_user_two
 ):
-    await client.post(
-        "/notifications",
-        json={
-            "title": "Hola",
-            "content": "Tu vuelo sale 10:30",
-            "channel": "sms",
-            "recipient": "+5491112345678",
-        },
-        headers=auth_headers,
-    )
-    await client.post(
-        "/notifications",
-        json={
-            "title": "Hola2",
-            "content": "Tu vuelo sale 11:30",
-            "channel": "sms",
-            "recipient": "+5491112345679",
-        },
-        headers=auth_headers_user_two,
-    )
+    created = (
+        await client.post("/notifications", json=SMS_PAYLOAD, headers=auth_headers)
+    ).json()
 
     response = await client.delete(
-        "/notifications/1",
+        f"/notifications/{created['id']}", headers=auth_headers_user_two
+    )
+
+    assert response.status_code == 404
+    remaining = (await client.get("/notifications", headers=auth_headers)).json()
+    assert [n["id"] for n in remaining] == [created["id"]]
+
+
+async def test_user_cannot_update_other_users_notification(
+    client, auth_headers, auth_headers_user_two
+):
+    created = (
+        await client.post("/notifications", json=SMS_PAYLOAD, headers=auth_headers)
+    ).json()
+
+    response = await client.patch(
+        f"/notifications/{created['id']}",
+        json={"title": "hackeado"},
         headers=auth_headers_user_two,
     )
 
     assert response.status_code == 404
+    remaining = (await client.get("/notifications", headers=auth_headers)).json()
+    assert remaining[0]["title"] == "Hola"
 
 
 async def test_patch_notification_only_changes_title(client, auth_headers):
