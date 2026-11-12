@@ -1,26 +1,21 @@
-from typing import Annotated
 from datetime import timedelta
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 import app.models
-from app.database import get_db
-from app.auth.schemas import UserRead, UserCreate, Token
-from app.auth.dependencies import CurrentUser
-
 from app.auth.auth import (
     create_access_token,
-    verify_access_token,
     hash_password,
     verify_password,
-    oauth2_scheme,
 )
-
+from app.auth.dependencies import CurrentUser
+from app.auth.schemas import Token, UserCreate, UserRead
 from app.config import settings
+from app.database import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -97,19 +92,3 @@ async def login_for_access_token(
 @router.get("/me", response_model=UserRead)
 async def read_current_user(current_user: CurrentUser):
     return current_user
-
-
-"""@router.get("/{user_id}", response_model=UserRead)
-async def get_user(
-    user_id: int,
-    db: Annotated[AsyncSession, Depends(get_db)],
-):
-    result = await db.execute(
-        select(app.models.User).where(
-            app.models.User.id == user_id,
-        )
-    )
-    user = result.scalars().first()
-    if user:
-        return user
-    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User Not found")"""

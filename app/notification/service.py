@@ -2,15 +2,15 @@ import logging
 from typing import Annotated
 
 from fastapi import Depends
-
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.notification.repository import INotificationRepository, NotificationRepository
-from app.delivery.deliveryRepository import IDeliveryRepository, DeliveryRepository
-from app.models import Notification, Delivery
+
 from app.channels.base import DeliveryResult
-from app.notification.schemas import NotificationCreate, NotificationUpdate
-from app.database import get_db
 from app.channels.registry import get_channel_notification
+from app.database import get_db
+from app.delivery.repository import DeliveryRepository, IDeliveryRepository
+from app.models import Delivery, Notification
+from app.notification.repository import INotificationRepository, NotificationRepository
+from app.notification.schemas import NotificationCreate, NotificationUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class NotificationService:
             setattr(result_noti, field, value)
 
         strategy = get_channel_notification(result_noti.channel)
-        strategy.validate(result_noti)    
+        strategy.validate(result_noti)
 
         await self._session.commit()
         await self._session.refresh(result_noti)

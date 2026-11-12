@@ -1,3 +1,128 @@
+# Notifications API
+
+API REST para que usuarios autenticados gestionen notificaciones y las envíen por distintos canales (Email, SMS y Push). Desarrollada como resolución del desafío técnico *Full Stack Take Home Challenge*.
+
+**Stack:** Python 3.12 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 17 · Alembic · Pydantic · PyJWT · pytest · Docker
+
+---
+
+## Requisitos
+
+- **Con Docker:** Docker y Docker Compose.
+- **Sin Docker:** Python 3.12 o superior, y una instancia de PostgreSQL (se puede levantar solo la base con Docker).
+
+## Ejecución con Docker (recomendada)
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
+Esto levanta PostgreSQL y la API, y aplica las migraciones automáticamente al arrancar.
+
+- API: http://localhost:8000
+- Documentación interactiva (Swagger): http://localhost:8000/docs
+
+## Ejecución local
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env
+docker compose up -d db        # solo la base de datos
+alembic upgrade head           # crea las tablas
+fastapi dev app/main.py        # API con recarga automática en http://127.0.0.1:8000
+```
+
+### Variables de entorno
+
+| Variable | Descripción |
+|---|---|
+| `DATABASE_URL` | URL de conexión a PostgreSQL (driver `postgresql+psycopg`) |
+| `SECRET_KEY` | Clave para firmar los JWT. Usar un valor largo y aleatorio fuera de desarrollo |
+| `ALGORITHM` | Algoritmo de firma de los JWT (`HS256`) |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del token de acceso, en minutos |
+
+## Tests
+
+Los tests usan una base de datos separada, `test_notifications`, que se crea automáticamente la primera vez que se inicializa el volumen de PostgreSQL (script en `docker/init-test-db.sql`). Cada test recrea las tablas, así que nunca tocan la base de desarrollo.
+
+```bash
+docker compose up -d db
+pytest -v
+```
+
+Si el volumen ya existía antes de agregar el script, la base de test se puede crear a mano:
+
+```bash
+docker compose exec db createdb -U notif test_notifications
+```
+
+**Qué cubren:**
+
+- **Canales (unitarios, sin base de datos):** reglas de validación de cada canal (límite de 160 caracteres, formato E.164, formato de email y de token), contenido del envío registrado, escape de HTML en el email, fallos simulados y canal desconocido en el registry.
+- **API (integración, contra PostgreSQL):** registro, login y `/auth/me`; creación, listado, edición y borrado de notificaciones; validaciones por canal; y autorización: un usuario no puede ver, editar ni borrar notificaciones de otro.
+
+## Uso
+
+1. Registrarse con `POST /auth/register`.
+2. Autenticarse con el botón **Authorize** de Swagger (email en el campo `username`), o con `POST /auth/token`.
+3. Crear notificaciones con `POST /notifications`.
+
+### Endpoints
+
+| Método | Ruta | Descripción | Auth |
+|---|---|---|---|
+| POST | `/auth/register` | Registro de usuario | No |
+| POST | `/auth/token` | Login (formulario OAuth2), devuelve el token de acceso | No |
+| GET | `/auth/me` | Usuario autenticado | Sí |
+| POST | `/notifications` | Crea una notificación y la envía por su canal | Sí |
+| GET | `/notifications` | Lista las notificaciones propias (`page`, `per_page`) | Sí |
+| PATCH | `/notifications/{id}` | Modifica una notificación propia (no la reenvía) | Sí |
+| DELETE | `/notifications/{id}` | Elimina una notificación propia (soft delete) | Sí |
+
+### Canales y formato del destinatario
+
+| Canal (`channel`) | `recipient` esperado | Ejemplo |
+|---|---|---|
+| `email` | Dirección de email válida | `usuario@ejemplo.com` |
+| `sms` | Teléfono en formato E.164 (`+` y de 8 a 15 dígitos). Contenido de hasta 160 caracteres | `+5491112345678` |
+| `push` | Token de dispositivo: de 20 a 255 caracteres (letras, números, `_`, `-`, `:`) | `dGhpc0lzQUZha2VUb2tlbjEyMw` |
+
+Para probar el registro de un envío fallido, cada canal simula un error con un destinatario especial (por ejemplo, un token de push que empieza con `fail-`). La notificación queda con estado `failed` y el error registrado.
+
+Ejemplo:
+
+```json
+{
+  "title": "Cambio de puerta",
+  "content": "Tu vuelo sale por la puerta 12",
+  "channel": "sms",
+  "recipient": "+5491112345678"
+}
+```
+
+## Estructura del proyecto
+
+```
+app/
+├── auth/            # registro, login, JWT y dependencia get_current_user
+├── notification/    # router, schemas, service y repository de notificaciones
+├── delivery/        # repository de los registros de envío
+├── channels/        # interfaz de canal, una implementación por canal y el registry
+├── models/          # modelos de SQLAlchemy
+├── config.py        # configuración desde variables de entorno
+├── database.py      # engine y sesión async
+└── main.py          # aplicación FastAPI
+migrations/          # migraciones de Alembic
+tests/               # tests unitarios (canales) y de integración (API)
+docker/              # script de inicialización de la base de test
+```
+
+---
+
 ## Decisiones técnicas
 
 ### Arquitectura
@@ -11,8 +136,6 @@ Dentro de cada módulo, el código se separa en tres capas:
 - **Repository:** encapsula el acceso a datos con SQLAlchemy. Nunca hace `commit`.
 
 Cada repository se define a partir de una interfaz (`ABC`) y se inyecta en el service mediante el sistema de dependencias de FastAPI. Esto permite testear el service con implementaciones en memoria, sin base de datos, y cambiar la implementación de persistencia respetando el mismo contrato.
-
-Stack: FastAPI, SQLAlchemy 2.0 async con psycopg 3, PostgreSQL y Alembic para migraciones.
 
 ### Modelo de datos
 
@@ -44,8 +167,6 @@ El canal se guarda como texto validado por el registry, y no como un Enum de bas
 | Email | Formato del destinatario con `email-validator` | Genera un template HTML con título y contenido escapados |
 | SMS | Teléfono en formato E.164 y contenido de hasta 160 caracteres | Registra el número y el largo del mensaje |
 | Push | Formato del token de dispositivo | Arma el payload (token, título, cuerpo y datos) |
-
-Cada canal permite simular un fallo con un destinatario especial (por ejemplo, un token que empieza con `fail-`), para probar el registro del estado `failed`.
 
 ### Envío y registro: por qué existe `deliveries`
 
@@ -82,11 +203,16 @@ Eliminar una notificación completa `deleted_at` en lugar de borrar la fila, par
 - Los schemas de Pydantic definen qué campos controla el cliente. `status` y `user_id` los asigna el servidor, lo que evita la asignación masiva de campos (*mass assignment*).
 - Validación en capas: Pydantic valida tipos y largos; cada canal valida su formato con una lista blanca; SQLAlchemy usa consultas parametrizadas contra la inyección SQL.
 - El contenido del usuario se escapa al generar el HTML del email, para prevenir la inyección de HTML.
-- El listado está paginado, con un límite máximo por página.
+- El listado está paginado, con un límite máximo de 100 elementos por página.
 
 ### Manejo de errores
 
 El service lanza excepciones propias del dominio (`NotificationNotFoundError`, `UnknownChannelError`, `NotificationValidationError`), sin conocer HTTP. El router las traduce a respuestas: 404 para un recurso inexistente o ajeno, y 422 para un canal desconocido o datos que no cumplen las reglas del canal.
+
+### Docker
+
+- La API aplica las migraciones (`alembic upgrade head`) antes de arrancar, y espera a que PostgreSQL esté listo mediante un healthcheck.
+- La base de test se crea con un script de inicialización de la imagen oficial de PostgreSQL.
 
 ### Limitaciones conocidas y próximos pasos
 

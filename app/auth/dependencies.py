@@ -4,13 +4,13 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
-from app.database import get_db
-
 from app.auth.auth import (
-    verify_access_token,
     oauth2_scheme,
+    verify_access_token,
 )
+from app.database import get_db
+from app.models import User
+
 
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
@@ -48,4 +48,5 @@ async def get_current_user(
 
     return user
 
-CurrentUser = Annotated[User, Depends(get_current_user)] 
+
+CurrentUser = Annotated[User, Depends(get_current_user)]

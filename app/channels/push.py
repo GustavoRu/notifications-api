@@ -1,9 +1,10 @@
 # Validar el token de dispositivo, formatear el payload y registrar el estado del envío.
-import re
 import asyncio
+import re
+
 from app.channels.base import (
-    INotificationChannel,
     DeliveryResult,
+    INotificationChannel,
     NotificationValidationError,
 )
 from app.models import Notification

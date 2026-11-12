@@ -1,10 +1,10 @@
 import pytest
-from app.channels.sms import SmsChannel
+
+from app.channels.base import NotificationValidationError, UnknownChannelError
 from app.channels.email import EmailChannel
 from app.channels.push import PushChannel
 from app.channels.registry import get_channel_notification
-
-from app.channels.base import NotificationValidationError, UnknownChannelError
+from app.channels.sms import SmsChannel
 from app.models import Notification
 
 pytestmark = pytest.mark.anyio
@@ -110,15 +110,21 @@ def test_push_invalid_recipient(recipient):
     with pytest.raises(NotificationValidationError):
         PushChannel().validate(notification)
 
-async def test_push_send_records_failure():
-    notification = make_notification(channel="push", recipient="fail-device-token-123456")
 
-    PushChannel().validate(notification)  # el token es válido: el fallo ocurre en el envío, no en la validación
+async def test_push_send_records_failure():
+    notification = make_notification(
+        channel="push", recipient="fail-device-token-123456"
+    )
+
+    PushChannel().validate(
+        notification
+    )  # el token es válido: el fallo ocurre en el envío, no en la validación
     result = await PushChannel().send(notification)
 
     assert result.status == "failed"
     assert result.error is not None
     assert "payload" in result.details
+
 
 async def test_push_send_payload_and_recipient():
     notification = make_notification(

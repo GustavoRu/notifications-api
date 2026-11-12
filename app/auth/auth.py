@@ -4,17 +4,20 @@ import jwt
 from fastapi.security import OAuth2PasswordBearer
 from pwdlib import PasswordHash
 
-from app.config import settings 
+from app.config import settings
 
 password_hash = PasswordHash.recommended()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
-def hash_password(password:str) -> str:
+
+def hash_password(password: str) -> str:
     return password_hash.hash(password)
 
-def verify_password(plain_password:str, hashed_password:str) -> bool:
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
     return password_hash.verify(plain_password, hashed_password)
+
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None) -> str:
     """Create a JWT access token."""
@@ -32,6 +35,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
         algorithm=settings.algorithm,
     )
     return encoded_jwt
+
 
 def verify_access_token(token: str) -> str | None:
     """Verify a JWT access token and return the subject (user id) if valid."""

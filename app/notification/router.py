@@ -1,15 +1,15 @@
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, status, Query
+from fastapi import APIRouter, HTTPException, Query, status
 
+from app.auth.dependencies import CurrentUser
+from app.channels.base import NotificationValidationError, UnknownChannelError
 from app.notification.schemas import (
     NotificationCreate,
     NotificationRead,
     NotificationUpdate,
 )
-from app.auth.dependencies import CurrentUser
-from app.notification.service import NotificationServiceDep, NotificationNotFoundError
-from app.channels.base import UnknownChannelError, NotificationValidationError
+from app.notification.service import NotificationNotFoundError, NotificationServiceDep
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 

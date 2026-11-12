@@ -1,11 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Literal
+
 from app.models import Notification
+
 
 @dataclass
 class DeliveryResult:
     """Lo que devuelve una estrategia. El service lo guarda; la estrategia no toca la base."""
+
     status: Literal["sent", "failed"]
     details: dict[str, Any] = field(default_factory=dict)
     error: str | None = None

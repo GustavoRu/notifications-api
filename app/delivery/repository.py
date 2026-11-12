@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Delivery
 
+
 class IDeliveryRepository(ABC):
     """Data access for delivery. Never commits: the service owns the transaction."""
 
@@ -17,6 +18,7 @@ class DeliveryRepository(IDeliveryRepository):
 
     async def add(self, delivery: Delivery) -> Delivery:
         self._session.add(delivery)
-        await self._session.flush()  # sends the INSERT inside the open transaction: id is now set
+        await (
+            self._session.flush()
+        )  # sends the INSERT inside the open transaction: id is now set
         return delivery
-

@@ -1,5 +1,4 @@
 import os
-from collections.abc import AsyncGenerator
 
 os.environ["DATABASE_URL"] = (
     "postgresql+psycopg://notif:notif@localhost:5434/test_notifications"
@@ -55,6 +54,7 @@ async def client():
         yield c
     app.dependency_overrides.clear()
 
+
 @pytest.fixture
 async def auth_headers(client):
     await client.post(
@@ -63,10 +63,11 @@ async def auth_headers(client):
     )
     response = await client.post(
         "/auth/token",
-        data={"username": "alice@test.com", "password": "secret123"},   # data=, no json=
+        data={"username": "alice@test.com", "password": "secret123"},  # data=, no json=
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
 
 @pytest.fixture
 async def auth_headers_user_two(client):
@@ -76,7 +77,7 @@ async def auth_headers_user_two(client):
     )
     response = await client.post(
         "/auth/token",
-        data={"username": "pablo@test.com", "password": "secret123"},   # data=, no json=
+        data={"username": "pablo@test.com", "password": "secret123"},  # data=, no json=
     )
     token = response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}

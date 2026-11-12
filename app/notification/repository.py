@@ -14,10 +14,14 @@ class INotificationRepository(ABC):
     async def add(self, notification: Notification) -> Notification: ...
 
     @abstractmethod
-    async def get_for_user(self, notification_id: int, user_id: int) -> Notification | None: ...
+    async def get_for_user(
+        self, notification_id: int, user_id: int
+    ) -> Notification | None: ...
 
     @abstractmethod
-    async def list_for_user(self, user_id: int, limit: int, offset: int) -> list[Notification]: ...
+    async def list_for_user(
+        self, user_id: int, limit: int, offset: int
+    ) -> list[Notification]: ...
 
     @abstractmethod
     async def delete(self, notification: Notification) -> None: ...
@@ -29,10 +33,14 @@ class NotificationRepository(INotificationRepository):
 
     async def add(self, notification: Notification) -> Notification:
         self._session.add(notification)
-        await self._session.flush()  # sends the INSERT inside the open transaction: id is now set
+        await (
+            self._session.flush()
+        )  # sends the INSERT inside the open transaction: id is now set
         return notification
 
-    async def get_for_user(self, notification_id: int, user_id: int) -> Notification | None:
+    async def get_for_user(
+        self, notification_id: int, user_id: int
+    ) -> Notification | None:
         result = await self._session.execute(
             select(Notification).where(
                 Notification.id == notification_id,
@@ -42,7 +50,9 @@ class NotificationRepository(INotificationRepository):
         )
         return result.scalar_one_or_none()
 
-    async def list_for_user(self, user_id: int, limit: int, offset: int) -> list[Notification]:
+    async def list_for_user(
+        self, user_id: int, limit: int, offset: int
+    ) -> list[Notification]:
         result = await self._session.execute(
             select(Notification)
             .where(
@@ -56,6 +66,7 @@ class NotificationRepository(INotificationRepository):
         return list(result.scalars().all())
 
     async def delete(self, notification: Notification) -> None:
-        notification.deleted_at = datetime.now(UTC)  # soft delete: the row and its deliveries stay
+        notification.deleted_at = datetime.now(
+            UTC
+        )  # soft delete: the row and its deliveries stay
         await self._session.flush()
-      
