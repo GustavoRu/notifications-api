@@ -1,4 +1,4 @@
-const NotificationPage = () => {
+const NotificationPage = (onLogout:any) => {
   return (
     <div>
       <h2>¡Hola, soy un NotificationPage!</h2>

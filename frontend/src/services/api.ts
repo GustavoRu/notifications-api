@@ -1,6 +1,6 @@
 import type { Notification, NotificationCreate, Token, UserCreate } from "../types";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.BACKEND_BASE_URL;
 const TOKEN_KEY = "token";
 
 export class ApiError extends Error {
