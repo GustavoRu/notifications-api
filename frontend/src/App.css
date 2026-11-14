@@ -58,6 +58,17 @@ button.secondary {
   border-color: var(--border);
 }
 
+button.danger {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+button.small {
+  font-size: 13px;
+  padding: 4px 10px;
+}
+
 input,
 select,
 textarea {
@@ -228,8 +239,46 @@ textarea {
   }
 }
 
+.notification-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
 .notification-meta {
   font-size: 14px;
+}
+
+/* Confirm modal */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: var(--shadow);
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text-h);
+  }
 }
 
 .badge {

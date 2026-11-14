@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./App.css";
 import { clearToken, getToken } from "./services/api";
 import LoginForm from "./components/LoginForm";
