@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import type { Notification } from "../types";
 import { ApiError, listNotifications } from "../services/api";
+import NotificationForm from "./NotificationForm";
 
 interface Props {
   onLogout: () => void;
@@ -10,6 +11,13 @@ const NotificationPage = ({ onLogout }: Props) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  // List comes newest first, so prepend
+  const handleCreated = (created: Notification) => {
+    setNotifications((prev) => [created, ...prev]);
+    setShowForm(false);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,8 +42,23 @@ const NotificationPage = ({ onLogout }: Props) => {
     <div className="notifications-page">
       <div className="notifications-header">
         <h2>Notificaciones</h2>
-        <button onClick={onLogout}>Cerrar sesión</button>
+        <div className="header-actions">
+          {!showForm && (
+            <button onClick={() => setShowForm(true)}>+ Crear notificación</button>
+          )}
+          <button className="secondary" onClick={onLogout}>
+            Cerrar sesión
+          </button>
+        </div>
       </div>
+
+      {showForm && (
+        <NotificationForm
+          onCreated={handleCreated}
+          onCancel={() => setShowForm(false)}
+          onUnauthorized={onLogout}
+        />
+      )}
 
       {loading && <p>Cargando...</p>}
       {error && <p className="error">{error}</p>}
