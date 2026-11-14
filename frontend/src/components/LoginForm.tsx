@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { login } from "../services/api";
 
 interface Props {
@@ -38,9 +38,7 @@ const LoginForm = ({ onLogin }: Props) => {
         <h2>Iniciar Sesión</h2>
 
         {error && (
-          <p className="error-message" style={{ color: "red" }}>
-            {error}
-          </p>
+          <p className="error-message">{error}</p>
         )}
 
         <div className="form-group">

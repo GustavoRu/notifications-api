@@ -7,10 +7,6 @@ import NotificationPage from "./components/NotificationsPage";
 function App() {
   const [token, setToken] = useState(getToken());
 
-  useEffect(() => {
-    console.log("token", token);
-  }, []);
-
   // login() in services already saved the token; just sync React state
   const handleLogin = () => setToken(getToken());
 
