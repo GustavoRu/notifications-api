@@ -36,11 +36,16 @@ const NotificationPage = ({ onLogout }: Props) => {
   };
 
   useEffect(() => {
+    // Set to true by the cleanup: if the component unmounted (or StrictMode
+    // re-ran the effect in development), the late response is ignored.
+    let ignore = false;
+
     const fetchData = async () => {
       try {
         const data = await listNotifications();
-        setNotifications(data);
+        if (!ignore) setNotifications(data);
       } catch (err) {
+        if (ignore) return;
         // Expired token: storage is already cleared, sync App state too
         if (err instanceof ApiError && err.status === 401) {
           onLogout();
@@ -48,10 +53,14 @@ const NotificationPage = ({ onLogout }: Props) => {
         }
         setError(err instanceof Error ? err.message : "Unexpected error");
       } finally {
-        setLoading(false);
+        if (!ignore) setLoading(false);
       }
     };
     fetchData();
+
+    return () => {
+      ignore = true;
+    };
   }, [onLogout]);
 
   // useMemo caches a computed value; it reruns only when a dependency changes.

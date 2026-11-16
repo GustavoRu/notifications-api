@@ -2,7 +2,7 @@
 
 API REST para que usuarios autenticados gestionen notificaciones y las envíen por distintos canales (Email, SMS y Push). Desarrollada como resolución del desafío técnico *Full Stack Take Home Challenge*.
 
-**Stack:** Python 3.12 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 17 · Alembic · Pydantic · PyJWT · pytest · Docker
+**Stack:** Python 3.12 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 17 · Alembic · Pydantic · PyJWT · pytest · Docker · React + TypeScript (frontend)
 
 ---
 
@@ -10,6 +10,7 @@ API REST para que usuarios autenticados gestionen notificaciones y las envíen p
 
 - **Con Docker:** Docker y Docker Compose.
 - **Sin Docker:** Python 3.12 o superior, y una instancia de PostgreSQL (se puede levantar solo la base con Docker).
+- **Frontend (opcional):** Node.js 20.19 o superior.
 
 ## Ejecución con Docker (recomendada)
 
@@ -44,6 +45,23 @@ fastapi dev app/main.py        # API con recarga automática en http://127.0.0.1
 | `SECRET_KEY` | Clave para firmar los JWT. Usar un valor largo y aleatorio fuera de desarrollo |
 | `ALGORITHM` | Algoritmo de firma de los JWT (`HS256`) |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | Duración del token de acceso, en minutos |
+
+## Frontend
+
+Interfaz web en React + TypeScript (Vite) para usar la API: inicio de sesión, listado de notificaciones con búsqueda y filtro por estado, creación y borrado.
+
+Con la API corriendo (con Docker o localmente):
+
+```bash
+cd frontend
+cp .env.example .env     # VITE_API_URL=http://localhost:8000
+npm install
+npm run dev              # http://localhost:5173
+```
+
+El frontend no tiene pantalla de registro: el usuario se crea desde Swagger (`POST /auth/register` en http://localhost:8000/docs), y después se inicia sesión en el frontend con ese email y esa contraseña.
+
+La API habilita CORS para `http://localhost:5173`.
 
 ## Tests
 
@@ -119,6 +137,7 @@ app/
 migrations/          # migraciones de Alembic
 tests/               # tests unitarios (canales) y de integración (API)
 docker/              # script de inicialización de la base de test
+frontend/            # interfaz web en React + TypeScript (Vite)
 ```
 
 ---
@@ -213,6 +232,12 @@ El service lanza excepciones propias del dominio (`NotificationNotFoundError`, `
 
 - La API aplica las migraciones (`alembic upgrade head`) antes de arrancar, y espera a que PostgreSQL esté listo mediante un healthcheck.
 - La base de test se crea con un script de inicialización de la imagen oficial de PostgreSQL.
+
+### Frontend
+
+- Una única función `request` centraliza las llamadas a la API: agrega el token, traduce los errores de la API (`detail`) a un `ApiError` con su código de estado, y contempla las respuestas sin contenido (204).
+- El token se guarda en `sessionStorage`: se descarta al cerrar la pestaña y, como no hay refresh token, al vencer (401) se vuelve a la pantalla de login. Al ser legible desde JavaScript queda expuesto ante un ataque XSS; en producción se evaluaría una cookie `httpOnly`, que además requiere protección contra CSRF.
+- Hooks: `useEffect` para la carga inicial, con una función de limpieza que descarta la respuesta si el componente se desmontó; `useMemo` para el filtrado y los contadores, que se derivan de la lista; y `useCallback` junto con `React.memo` para que cada notificación no se vuelva a renderizar cuando cambia otro estado de la página. La búsqueda usa un hook propio, `useDebounce`, que filtra recién cuando el usuario deja de escribir.
 
 ### Limitaciones conocidas y próximos pasos
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import "./App.css";
 import { clearToken, getToken } from "./services/api";
 import LoginForm from "./components/LoginForm";
@@ -7,13 +7,17 @@ import NotificationPage from "./components/NotificationsPage";
 function App() {
   const [token, setToken] = useState(getToken());
 
-  // login() in services already saved the token; just sync React state
-  const handleLogin = () => setToken(getToken());
+  // useCallback keeps these references stable across App renders:
+  // NotificationsPage uses onLogout as a useEffect and useCallback dependency,
+  // so a new function on every render would refetch the list and break memo.
 
-  const handleLogout = () => {
+  // login() in services already saved the token; just sync React state
+  const handleLogin = useCallback(() => setToken(getToken()), []);
+
+  const handleLogout = useCallback(() => {
     clearToken();
     setToken(null);
-  };
+  }, []);
 
   return (
     <div className="app">
