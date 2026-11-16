@@ -20,7 +20,6 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  console.log("REQUEST URL:", `${API_URL}${path}`)
   const response = await fetch(`${API_URL}${path}`, { ...options, headers });
 
   if (response.status === 401) clearToken();

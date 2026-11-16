@@ -205,6 +205,15 @@ textarea {
   color: var(--text);
 }
 
+.filters {
+  display: flex;
+  gap: 8px;
+
+  input {
+    flex: 1;
+  }
+}
+
 .notifications-list {
   list-style: none;
   padding: 0;

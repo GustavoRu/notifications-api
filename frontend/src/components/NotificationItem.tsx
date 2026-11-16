@@ -64,4 +64,5 @@ const NotificationItem = ({ notification, onDelete }: Props) => {
   );
 };
 
+// memo skips re-rendering when every prop is === to the previous render's
 export default memo(NotificationItem);
